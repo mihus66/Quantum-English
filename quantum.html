@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum English</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background: white; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
+        
+        /* Хедер */
+        header { background: linear-gradient(90deg, #4f46e5, #7c3aed); color: white; padding: 25px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 15px; }
+        .logo i { font-size: 2.5rem; }
+        .logo h1 { font-size: 1.8rem; font-weight: bold; }
+        
+        /* Основной контент */
+        .auth-container { padding: 40px; max-width: 500px; margin: 50px auto; }
+        .auth-box { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .auth-title { text-align: center; margin-bottom: 30px; color: #4f46e5; }
+        
+        /* Формы */
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .form-control { width: 100%; padding: 12px 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; }
+        .form-control:focus { border-color: #4f46e5; outline: none; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        textarea.form-control { min-height: 100px; resize: vertical; }
+        
+        /* Кнопки */
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: all 0.3s; }
+        .btn-primary { background: #4f46e5; color: white; }
+        .btn-primary:hover { background: #4338ca; transform: translateY(-2px); }
+        .btn-secondary { background: #10b981; color: white; }
+        .btn-secondary:hover { background: #0da271; transform: translateY(-2px); }
+        .btn-outline { background: white; border: 2px solid #4f46e5; color: #4f46e5; }
+        .btn-outline:hover { background: #4f46e5; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        
+        /* Карточки заданий */
+        .assignments-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; margin-top: 25px; }
+        .assignment-card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 5px solid #4f46e5; transition: all 0.3s; }
+        .assignment-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+        .assignment-title { color: #4f46e5; font-size: 1.3rem; margin-bottom: 10px; font-weight: 600; }
+        .assignment-meta { display: flex; justify-content: space-between; color: #64748b; margin-bottom: 15px; font-size: 0.9rem; }
+        .assignment-type { background: #4f46e5; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; }
+        .assignment-actions { display: flex; gap: 10px; margin-top: 20px; }
+        
+        /* Вопросы при создании */
+        .question-item { background: #f8fafc; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #10b981; }
+        .question-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .options-grid { display: grid; gap: 10px; margin-top: 15px; }
+        .option-item { display: flex; align-items: center; gap: 10px; }
+        
+        /* Тест для ученика */
+        .test-container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .test-question { margin-bottom: 30px; padding-bottom: 25px; border-bottom: 2px solid #f1f5f9; }
+        .test-options { display: grid; gap: 12px; margin-top: 15px; }
+        .test-option { padding: 15px; background: #f8fafc; border-radius: 8px; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 12px; }
+        .test-option:hover { border-color: #c7d2fe; background: #e0e7ff; }
+        .test-option.selected { border-color: #10b981; background: #d1fae5; }
+        
+        /* Таблица прогресса */
+        .progress-table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .progress-table th { background: #f1f5f9; padding: 18px; text-align: left; color: #475569; font-weight: 600; }
+        .progress-table td { padding: 18px; border-bottom: 1px solid #e2e8f0; }
+        .progress-table tr:hover { background: #f8fafc; }
+        
+        /* Уведомления */
+        .notification { position: fixed; top: 30px; right: 30px; padding: 18px 25px; background: linear-gradient(90deg, #4f46e5, #7c3aed); color: white; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10000; display: flex; align-items: center; gap: 15px; animation: slideIn 0.3s; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        /* Загрузка */
+        .loading { text-align: center; padding: 40px; color: #64748b; }
+        .loading i { font-size: 3rem; color: #4f46e5; margin-bottom: 15px; display: block; }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header id="header">
+            <div class="logo">
+                <i class="fas fa-atom"></i>
+                <div>
+                    <h1>Quantum English</h1>
+                    <p style="opacity: 0.8; font-size: 0.9rem;">Квантовый скачок в изучении языка</p>
+                </div>
+            </div>
+            <div id="userInfo"></div>
+        </header>
+        
+        <div id="mainContent">
+            <!-- Форма аутентификации -->
+            <div class="auth-container" id="authSection">
+                <div class="auth-box">
+                    <h2 class="auth-title" id="authTitle">Вход в систему</h2>
+                    <form id="authForm">
+                        <div class="form-group">
+                            <label>Email адрес</label>
+                            <input type="email" id="email" class="form-control" placeholder="ваш@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Пароль</label>
+                            <input type="password" id="password" class="form-control" placeholder="Ваш пароль" required>
+                        </div>
+                        
+                        <div id="nameFields" class="hidden">
+                            <div class="form-group">
+                                <label>Имя</label>
+                                <input type="text" id="firstName" class="form-control" placeholder="Ваше имя">
+                            </div>
+                            <div class="form-group">
+                                <label>Фамилия</label>
+                                <input type="text" id="lastName" class="form-control" placeholder="Ваша фамилия">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Вы:</label>
+                            <div style="display: flex; gap: 20px; margin-top: 10px;">
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; flex: 1;">
+                                    <input type="radio" name="role" value="student" checked>
+                                    <span>Ученик</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 12px; background: #f8fafc; border-radius: 8px; flex: 1;">
+                                    <input type="radio" name="role" value="teacher">
+                                    <span>Учитель</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                            <button type="button" id="toggleAuthMode" class="btn btn-outline">
+                                <i class="fas fa-user-plus"></i> Создать аккаунт
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt"></i> Войти
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Основное приложение (скрыто до входа) -->
+            <div id="appContent" class="hidden" style="padding: 30px;">
+                <div style="display: flex; min-height: 600px;">
+                    <!-- Боковое меню -->
+                    <div style="width: 250px; background: #f8fafc; padding: 20px; border-radius: 10px; margin-right: 30px;">
+                        <div style="margin-bottom: 30px;">
+                            <div style="font-weight: bold; color: #4f46e5; margin-bottom: 10px;">ГЛАВНОЕ МЕНЮ</div>
+                            <div class="menu-item" data-section="dashboard">📊 Панель управления</div>
+                            <div class="menu-item" data-section="assignments">📝 Мои задания</div>
+                            <div class="menu-item hidden" id="teacherMenu">
+                                <div class="menu-item" data-section="create">➕ Создать задание</div>
+                                <div class="menu-item" data-section="progress">📈 Прогресс учеников</div>
+                            </div>
+                            <div class="menu-item" data-section="profile">👤 Мой профиль</div>
+                            <div class="menu-item" id="logoutBtn" style="color: #ef4444;">🚪 Выйти</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Контент -->
+                    <div style="flex: 1;">
+                        <div id="contentArea">
+                            <h2 id="pageTitle" style="color: #4f46e5; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px solid #4f46e5;">Добро пожаловать!</h2>
+                            <div id="pageContent">
+                                <div class="loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Загрузка...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === ВАША КОНФИГУРАЦИЯ FIREBASE ===
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCzGe5mTG-IOv42_glPr08Yvyf0JO9aP4",
+            authDomain: "site-5bbfb.firebaseapp.com",
+            projectId: "site-5bbfb",
+            storageBucket: "site-5bbfb.firebasestorage.app",
+            messagingSenderId: "832264141262",
+            appId: "1:832264141262:web:0008b8345a7027e8f5139f",
+            measurementId: "G-RY07J63L4V"
+        };
+
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Основное приложение
+        const app = {
+            currentUser: null,
+            currentTest: null,
+            currentAssignment: null,
+            
+            init() {
+                console.log('Quantum English инициализирован');
+                this.setupEventListeners();
+                this.checkAuth();
+            },
+            
+            setupEventListeners() {
+                // Переключение режима входа/регистрации
+                document.getElementById('toggleAuthMode').addEventListener('click', () => {
+                    this.toggleAuthMode();
+                });
+                
+                // Форма входа/регистрации
+                document.getElementById('authForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleAuth();
+                });
+                
+                // Навигация
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const section = item.getAttribute('data-section');
+                        if (section) this.showSection(section);
+                        else if (item.id === 'logoutBtn') this.logout();
+                    });
+                });
+            },
+            
+            toggleAuthMode() {
+                const title = document.getElementById('authTitle');
+                const submitBtn = document.querySelector('#authForm button[type="submit"]');
+                const toggleBtn = document.getElementById('toggleAuthMode');
+                const nameFields = document.getElementById('nameFields');
+                
+                if (title.textContent === 'Вход в систему') {
+                    // Переключаем на регистрацию
+                    title.textContent = 'Регистрация в Quantum English';
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Зарегистрироваться';
+                    toggleBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Уже есть аккаунт';
+                    nameFields.classList.remove('hidden');
+                } else {
+                    // Переключаем на вход
+                    title.textContent = 'Вход в систему';
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Войти';
+                    toggleBtn.innerHTML = '<i class="fas fa-user-plus"></i> Создать аккаунт';
+                    nameFields.classList.add('hidden');
+                }
+            },
+            
+            async handleAuth() {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const role = document.querySelector('input[name="role"]:checked').value;
+                const isLogin = document.getElementById('authTitle').textContent === 'Вход в систему';
+                
+                try {
+                    if (isLogin) {
+                        // ВХОД
+                        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                        await this.setupUserData(userCredential.user, firstName, lastName, role);
+                        this.showNotification('✅ Вход выполнен успешно!');
+                    } else {
+                        // РЕГИСТРАЦИЯ
+                        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                        await this.saveUserToFirestore(userCredential.user, firstName, lastName, role);
+                        this.showNotification('🎉 Регистрация успешна! Добро пожаловать!');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    this.showNotification('❌ ' + this.getErrorMessage(error), true);
+                }
+            },
+            
+            async saveUserToFirestore(user, firstName, lastName, role) {
+                await db.collection('users').doc(user.uid).set({
+                    uid: user.uid,
+                    email: user.email,
+                    firstName: firstName,
+                    lastName: lastName,
+                    role: role,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                this.currentUser = {
+                    uid: user.uid,
+                    email: user.email,
+                    firstName: firstName,
+                    lastName: lastName,
+                    role: role
+                };
+                
+                this.showApp();
+            },
+            
+            async setupUserData(user, firstName, lastName, role) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                
+                if (userDoc.exists) {
+                    this.currentUser = { uid: user.uid, ...userDoc.data() };
+                } else {
+                    await this.saveUserToFirestore(user, firstName || 'Пользователь', lastName || '', role || 'student');
+                }
+                
+                this.showApp();
+            },
+            
+            showNotification(message, isError = false) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.background = isError ? '#ef4444' : 'linear-gradient(90deg, #4f46e5, #7c3aed)';
+                notification.innerHTML = `
+                    <i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i>
+                    ${message}
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            },
+            
+            getErrorMessage(error) {
+                const messages = {
+                    'auth/email-already-in-use': 'Этот email уже зарегистрирован',
+                    'auth/invalid-email': 'Некорректный email адрес',
+                    'auth/weak-password': 'Пароль должен содержать минимум 6 символов',
+                    'auth/user-not-found': 'Пользователь не найден',
+                    'auth/wrong-password': 'Неверный пароль',
+                    'auth/network-request-failed': 'Проверьте подключение к интернету'
+                };
+                return messages[error.code] || 'Произошла ошибка: ' + error.message;
+            },
+            
+            checkAuth() {
+                auth.onAuthStateChanged((user) => {
+                    console.log('Состояние аутентификации:', user ? 'вошел' : 'вышел');
+                    if (user) {
+                        db.collection('users').doc(user.uid).get().then(doc => {
+                            if (doc.exists) {
+                                this.currentUser = { uid: user.uid, ...doc.data() };
+                                this.showApp();
+                            }
+                        }).catch(error => {
+                            console.error('Ошибка получения пользователя:', error);
+                        });
+                    } else {
+                        this.showAuth();
+                    }
+                });
+            },
+            
+            showAuth() {
+                document.getElementById('authSection').classList.remove('hidden');
+                document.getElementById('appContent').classList.add('hidden');
+                document.getElementById('userInfo').innerHTML = '';
+            },
+            
+            showApp() {
+                document.getElementById('authSection').classList.add('hidden');
+                document.getElementById('appContent').classList.remove('hidden');
+                
+                // Показываем информацию пользователя
+                document.getElementById('userInfo').innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; font-weight: 500;">
+                            ${this.currentUser.firstName} ${this.currentUser.lastName}
+                        </div>
+                        <div style="background: ${this.currentUser.role === 'teacher' ? '#f59e0b' : '#10b981'}; 
+                                    color: white; padding: 5px 12px; border-radius: 15px; font-size: 0.9rem; font-weight: 600;">
+                            ${this.currentUser.role === 'teacher' ? '👨‍🏫 Учитель' : '👨‍🎓 Ученик'}
+                        </div>
+                    </div>
+                `;
+                
+                // Настраиваем меню для учителя
+                if (this.currentUser.role === 'teacher') {
+                    document.getElementById('teacherMenu').classList.remove('hidden');
+                } else {
+                    document.getElementById('teacherMenu').classList.add('hidden');
+                }
+                
+                this.showSection('dashboard');
+            },
+            
+            logout() {
+                auth.signOut().then(() => {
+                    this.showNotification('👋 Вы вышли из системы');
+                }).catch(error => {
+                    console.error('Ошибка выхода:', error);
+                });
+            },
+            
+            showSection(section) {
+                document.getElementById('pageTitle').textContent = this.getSectionTitle(section);
+                document.getElementById('pageContent').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>Загрузка...</p></div>';
+                
+                // Подсветка активного пункта меню
+                document.querySelectorAll('.menu-item[data-section]').forEach(item => {
+                    item.style.background = item.getAttribute('data-section') === section ? '#e0e7ff' : 'transparent';
+                    item.style.borderRadius = '8px';
+                    item.style.padding = '10px';
+                });
+                
+                // Загружаем контент секции
+                setTimeout(() => {
+                    this.loadSectionContent(section);
+                }, 100);
+            },
+            
+            getSectionTitle(section) {
+                const titles = {
+                    'dashboard': 'Панель управления',
+                    'assignments': 'Мои задания',
+                    'create': 'Создание задания',
+                    'progress': 'Прогресс учеников',
+                    'profile': 'Мой профиль'
+                };
+                return titles[section] || 'Quantum English';
+            },
+            
+            async loadSectionContent(section) {
+                const content = document.getElementById('pageContent');
+                
+                switch(section) {
+                    case 'dashboard':
+                        await this.loadDashboard();
+                        break;
+                    case 'assignments':
+                        await this.loadAssignments();
+                        break;
+                    case 'create':
+                        await this.loadCreateAssignment();
+                        break;
+                    case 'progress':
+                        await this.loadProgress();
+                        break;
+                    case 'profile':
+                        await this.loadProfile();
+                        break;
+                }
+            },
+            
+            async loadDashboard() {
+                const content = document.getElementById('pageContent');
+                
+                try {
+                    if (this.currentUser.role === 'teacher') {
+                        // Для учителя
+                        const studentsSnapshot = await db.collection('users')
+                            .where('role', '==', 'student')
+                            .get();
+                        
+                        const assignmentsSnapshot = await db.collection('assignments')
+                            .where('teacherId', '==', this.currentUser.uid)
+                            .get();
+                        
+                        const resultsSnapshot = await db.collection('results').get();
+                        
+                        content.innerHTML = `
+                            <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 30px; border-radius: 15px; margin-bottom: 30px;">
+                                <h2 style="margin-bottom: 15px;">Добро пожаловать, ${this.currentUser.firstName}!</h2>
+                                <p>Управляйте процессом обучения ваших учеников</p>
+                            </div>
+                            
+                            <div class="assignments-grid">
+                                <div class="assignment-card">
+                                    <div class="assignment-title">👥 Ученики</div>
+                                    <div class="assignment-meta">
+                                        <span>Зарегистрировано</span>
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 800; color: #4f46e5; text-align: center; margin: 20px 0;">
+                                        ${studentsSnapshot.size}
+                                    </div>
+                                    <div class="assignment-actions">
+                                        <button onclick="app.showSection('progress')" class="btn btn-primary">
+                                            Посмотреть прогресс
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="assignment-card">
+                                    <div class="assignment-title">📝 Задания</div>
+                                    <div class="assignment-meta">
+                                        <span>Создано заданий</span>
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 800; color: #10b981; text-align: center; margin: 20px 0;">
+                                        ${assignmentsSnapshot.size}
+                                    </div>
+                                    <div class="assignment-actions">
+                                        <button onclick="app.showSection('create')" class="btn btn-success">
+                                            Создать новое
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="assignment-card">
+                                    <div class="assignment-title">📊 Активность</div>
+                                    <div class="assignment-meta">
+                                        <span>Выполнено работ</span>
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 800; color: #f59e0b; text-align: center; margin: 20px 0;">
+                                        ${resultsSnapshot.size}
+                                    </div>
+                                    <div class="assignment-actions">
+                                        <button onclick="app.showSection('assignments')" class="btn btn-outline">
+                                            Все задания
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 40px;">
+                                <h3 style="color: #4f46e5; margin-bottom: 20px;">Быстрые действия</h3>
+                                <div style="display: flex; gap: 15px;">
+                                    <button onclick="app.showSection('create')" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Создать задание
+                                    </button>
+                                    <button onclick="app.showSection('progress')" class="btn btn-secondary">
+                                        <i class="fas fa-chart-line"></i> Посмотреть прогресс
+                                    </button>
+                                    <button onclick="app.showSection('assignments')" class="btn btn-outline">
+                                        <i class="fas fa-tasks"></i> Мои задания
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        // Для ученика
+                        const assignmentsSnapshot = await db.collection('assignments').get();
+                        const resultsSnapshot = await db.collection('results')
+                            .where('studentId', '==', this.currentUser.uid)
+                            .get();
+                        
+                        const completed = resultsSnapshot.size;
+                        const total = assignmentsSnapshot.size;
+                        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                        
+                        content.innerHTML = `
+                            <div style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 30px; border-radius: 15px; margin-bottom: 30px;">
+                                <h2 style="margin-bottom: 15px;">Привет, ${this.currentUser.firstName}!</h2>
+                                <p>Продолжайте изучать английский с Quantum English!</p>
+                            </div>
+                            
+                            <div class="assignments-grid">
+                                <div class="assignment-card">
+                                    <div class="assignment-title">📚 Доступные задания</div>
+                                    <div class="assignment-meta">
+                                        <span>Ожидают выполнения</span>
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 800; color: #4f46e5; text-align: center; margin: 20px 0;">
+                                        ${total - completed}
+                                    </div>
+                                    <div class="assignment-actions">
+                                        <button onclick="app.showSection('assignments')" class="btn btn-primary">
+                                            Начать обучение
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="assignment-card">
+                                    <div class="assignment-title">🏆 Прогресс</div>
+                                    <div class="assignment-meta">
+                                        <span>Выполнено заданий</span>
+                                    </div>
+                                    <div style="font-size: 2.5rem; font-weight: 800; color: #10b981; text-align: center; margin: 20px 0;">
+                                        ${completed}
+                                    </div>
+                                    <div style="margin: 20px 0;">
+                                        <div style="height: 12px; background: #e2e8f0; border-radius: 6px; overflow: hidden;">
+                                            <div style="height: 100%; width: ${percentage}%; background: #10b981; border-radius: 6px; transition: width 0.5s;"></div>
+                                        </div>
+                                        <div style="text-align: center; margin-top: 10px; color: #64748b; font-weight: 600;">${percentage}% выполнено</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="assignment-card">
+                                    <div class="assignment-title">🎯 Советы</div>
+                                    <div class="assignment-meta">
+                                        <span>Для лучшего результата</span>
+                                    </div>
+                                    <ul style="margin: 20px 0; padding-left: 20px; color: #475569;">
+                                        <li style="margin-bottom: 10px;">Регулярно выполняйте задания</li>
+                                        <li style="margin-bottom: 10px;">Повторяйте пройденный материал</li>
+                                        <li>Не бойтесь ошибаться</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 40px; text-align: center;">
+                                <button onclick="app.showSection('assignments')" class="btn btn-primary" style="padding: 15px 40px; font-size: 1.1rem;">
+                                    <i class="fas fa-play-circle"></i> Начать следующее задание
+                                </button>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки дашборда:', error);
+                    content.innerHTML = '<p style="color: #ef4444;">Ошибка загрузки данных. Проверьте подключение.</p>';
+                }
+            },
+            
+            async loadAssignments() {
+                const content = document.getElementById('pageContent');
+                
+                try {
+                    if (this.currentUser.role === 'teacher') {
+                        // Учитель видит свои задания
+                        const assignmentsSnapshot = await db.collection('assignments')
+                            .where('teacherId', '==', this.currentUser.uid)
+                            .get();
+                        
+                        if (assignmentsSnapshot.empty) {
+                            content.innerHTML = `
+                                <div style="text-align: center; padding: 40px;">
+                                    <i class="fas fa-tasks" style="font-size: 4rem; color: #cbd5e1; margin-bottom: 20px;"></i>
+                                    <h3 style="color: #64748b; margin-bottom: 15px;">Заданий пока нет</h3>
+                                    <p style="color: #94a3b8; margin-bottom: 30px;">Создайте первое задание для ваших учеников</p>
+                                    <button onclick="app.showSection('create')" class="btn btn-primary">
+                                        <i class="fas fa-plus"></i> Создать задание
+                                    </button>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        let html = `<div class="assignments-grid">`;
+                        
+                        assignmentsSnapshot.forEach(doc => {
+                            const assignment = doc.data();
+                            const createdAt = assignment.createdAt ? 
+                                assignment.createdAt.toDate().toLocaleDateString('ru-RU') : 'Недавно';
+                            
+                            html += `
+                                <div class="assignment-card">
+                                    <div class="assignment-title">${assignment.title || 'Без названия'}</div>
+                                    <div class="assignment-meta">
+                                        <span>${createdAt}</span>
+                                        <span class="assignment-type">${assignment.type === 'test' ? 'Тест' : 'Письменное'}</span>
+                                    </div>
+                                    <p style="color: #64748b; margin-bottom: 15px;">${assignment.description || 'Нет описания'}</p>
+                                    <p><strong>Вопросов:</strong> ${assignment.questions ? assignment.questions.length : 0}</p>
+                                    <div class="assignment-actions">
+                                        <button onclick="app.previewAssignment('${doc.id}')" class="btn btn-primary">
+                                            Просмотреть
+                                        </button>
+                                        <button onclick="app.viewAssignmentResults('${doc.id}')" class="btn btn-secondary">
+                                            Результаты
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div>`;
+                        content.innerHTML = html;
+                        
+                    } else {
+                        // Ученик видит доступные задания
+                        const assignmentsSnapshot = await db.collection('assignments').get();
+                        const resultsSnapshot = await db.collection('results')
+                            .where('studentId', '==', this.currentUser.uid)
+                            .get();
+                        
+                        const completedIds = resultsSnapshot.docs.map(doc => doc.data().assignmentId);
+                        
+                        if (assignmentsSnapshot.empty) {
+                            content.innerHTML = `
+                                <div style="text-align: center; padding: 40px;">
+                                    <i class="fas fa-tasks" style="font-size: 4rem; color: #cbd5e1; margin-bottom: 20px;"></i>
+                                    <h3 style="color: #64748b; margin-bottom: 15px;">Заданий пока нет</h3>
+                                    <p style="color: #94a3b8;">Ожидайте, пока учитель создаст задания</p>
+                                </div>
+                            `;
+                            return;
+                        }
+                        
+                        let html = `<div class="assignments-grid">`;
+                        
+                        assignmentsSnapshot.forEach(doc => {
+                            const assignment = doc.data();
+                            const isCompleted = completedIds.includes(doc.id);
+                            const teacherName = assignment.teacherName || 'Учитель';
+                            
+                            html += `
+                                <div class="assignment-card">
+                                    <div class="assignment-title">${assignment.title || 'Без названия'}</div>
+                                    <div class="assignment-meta">
+                                        <span>От: ${teacherName}</span>
+                                        <span class="assignment-type">${assignment.type === 'test' ? 'Тест' : 'Письменное'}</span>
+                                    </div>
+                                    <p style="color: #64748b; margin-bottom: 15px;">${assignment.description || 'Нет описания'}</p>
+                                    ${isCompleted ? 
+                                        '<p style="color: #10b981; font-weight: 600; margin-bottom: 15px;">✅ Выполнено</p>' : 
+                                        '<p style="color: #f59e0b; font-weight: 600; margin-bottom: 15px;">⏳ Ожидает выполнения</p>'
+                                    }
+                                    <div class="assignment-actions">
+                                        ${!isCompleted ? 
+                                            `<button onclick="app.startAssignment('${doc.id}')" class="btn btn-primary">
+                                                Начать выполнение
+                                            </button>` :
+                                            `<button onclick="app.viewMyResult('${doc.id}')" class="btn btn-secondary">
+                                                Посмотреть результат
+                                            </button>`
+                                        }
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `</div>`;
+                        content.innerHTML = html;
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки заданий:', error);
+                    content.innerHTML = '<p style="color: #ef4444;">Ошибка загрузки заданий. Проверьте подключение.</p>';
+                }
+            },
+            
+            async loadCreateAssignment() {
+                const content = document.getElementById('pageContent');
+                
+                if (this.currentUser.role !== 'teacher') {
+                    content.innerHTML = '<p style="color: #ef4444;">Эта страница доступна только учителям</p>';
+                    return;
+                }
+                
+                content.innerHTML = `
+                    <div style="max-width: 800px; margin: 0 auto;">
+                        <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+                            <h3 style="color: #4f46e5; margin-bottom: 25px;">Создание нового задания</h3>
+                            
+                            <form id="createAssignmentForm">
+                                <div class="form-group">
+                                    <label>Название задания</label>
+                                    <input type="text" id="assignmentTitle" class="form-control" 
+                                           placeholder="Например: Present Simple Tense Test" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Описание задания</label>
+                                    <textarea id="assignmentDescription" class="form-control" rows="3"
+                                              placeholder="Опишите задание для учеников..."></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Тип задания</label>
+                                    <select id="assignmentType" class="form-control">
+                                        <option value="test">Тест (выбор ответа)</option>
+                                        <option value="written">Письменное задание</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="questionsContainer">
+                                    <!-- Вопросы будут добавлены здесь -->
+                                </div>
+                                
+                                <div style="display: flex; justify-content: space-between; margin-top: 40px;">
+                                    <button type="button" id="addQuestionBtn" class="btn btn-secondary">
+                                        <i class="fas fa-plus"></i> Добавить вопрос
+                                    </button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-rocket"></i> Создать задание
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                `;
+                
+                // Добавляем первый вопрос
+                this.addQuestion();
+                
+                // Настраиваем обработчики для формы создания
+                document.getElementById('addQuestionBtn').addEventListener('click', () => this.addQuestion());
+                document.getElementById('createAssignmentForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.createAssignment();
+                });
+            },
+            
+            addQuestion() {
+                const container = document.getElementById('questionsContainer');
+                const count = container.children.length + 1;
+                
+                const questionHtml = `
+                    <div class="question-item" data-question-id="${count}">
+                        <div class="question-header">
+                            <h4 style="color: #4f46e5;">Вопрос ${count}</h4>
+                            <button type="button" class="btn btn-danger" onclick="app.removeQuestion(${count})" ${count === 1 ? 'disabled' : ''}
+                                    style="padding: 6px 12px; font-size: 0.9rem;">
+                                <i class="fas fa-trash"></i> Удалить
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label>Текст вопроса</label>
+                            <input type="text" class="form-control question-text" placeholder="Введите вопрос" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Тип вопроса</label>
+                            <select class="form-control question-type" onchange="app.toggleQuestionType(${count})">
+                                <option value="test">Тестовый вопрос</option>
+                                <option value="written">Письменный ответ</option>
+                            </select>
+                        </div>
+                        <div id="questionOptions${count}">
+                            <div class="options-grid">
+                                <div class="option-item">
+                                    <input type="radio" name="correct${count}" value="0" checked>
+                                    <input type="text" class="form-control" placeholder="Вариант ответа 1" required>
+                                </div>
+                                <div class="option-item">
+                                    <input type="radio" name="correct${count}" value="1">
+                                    <input type="text" class="form-control" placeholder="Вариант ответа 2" required>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline" onclick="app.addOption(${count})" 
+                                    style="margin-top: 10px; padding: 8px 16px;">
+                                <i class="fas fa-plus"></i> Добавить вариант
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', questionHtml);
+            },
+            
+            removeQuestion(questionId) {
+                const question = document.querySelector(`[data-question-id="${questionId}"]`);
+                if (question) {
+                    question.remove();
+                }
+            },
+            
+            toggleQuestionType(questionId) {
+                const optionsDiv = document.getElementById(`questionOptions${questionId}`);
+                const select = document.querySelector(`[data-question-id="${questionId}"] .question-type`);
+                
+                if (select.value === 'written') {
+                    optionsDiv.innerHTML = '<p style="color: #64748b; padding: 10px; background: #f1f5f9; border-radius: 8px;">Ученик должен будет написать текстовый ответ.</p>';
+                } else {
+                    optionsDiv.innerHTML = `
+                        <div class="options-grid">
+                            <div class="option-item">
+                                <input type="radio" name="correct${questionId}" value="0" checked>
+                                <input type="text" class="form-control" placeholder="Вариант ответа 1" required>
+                            </div>
+                            <div class="option-item">
+                                <input type="radio" name="correct${questionId}" value="1">
+                                <input type="text" class="form-control" placeholder="Вариант ответа 2" required>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline" onclick="app.addOption(${questionId})" 
+                                style="margin-top: 10px; padding: 8px 16px;">
+                            <i class="fas fa-plus"></i> Добавить вариант
+                        </button>
+                    `;
+                }
+            },
+            
+            addOption(questionId) {
+                const optionsDiv = document.getElementById(`questionOptions${questionId}`);
+                const optionCount = optionsDiv.querySelectorAll('.option-item').length;
+                
+                const optionHtml = `
+                    <div class="option-item">
+                        <input type="radio" name="correct${questionId}" value="${optionCount}">
+                        <input type="text" class="form-control" placeholder="Вариант ответа ${optionCount + 1}" required>
+                    </div>
+                `;
+                
+                const addButton = optionsDiv.querySelector('button');
+                addButton.insertAdjacentHTML('beforebegin', optionHtml);
+            },
+            
+            async createAssignment() {
+                try {
+                    const title = document.getElementById('assignmentTitle').value;
+                    const description = document.getElementById('assignmentDescription').value;
+                    const type = document.getElementById('assignmentType').value;
+                    
+                    // Собираем вопросы
+                    const questions = [];
+                    const questionItems = document.querySelectorAll('.question-item');
+                    
+                    for (const item of questionItems) {
+                        const text = item.querySelector('.question-text').value;
+                        const questionType = item.querySelector('.question-type').value;
+                        
+                        if (questionType === 'test') {
+                            const options = [];
+                            const optionInputs = item.querySelectorAll('.option-item input[type="text"]');
+                            const correctRadio = item.querySelector(`input[name^="correct"]:checked`);
+                            
+                            optionInputs.forEach((input, index) => {
+                                if (input.value.trim()) {
+                                    options.push({
+                                        text: input.value,
+                                        isCorrect: correctRadio && parseInt(correctRadio.value) === index
+                                    });
+                                }
+                            });
+                            
+                            questions.push({
+                                text: text,
+                                type: 'test',
+                                options: options
+                            });
+                        } else {
+                            questions.push({
+                                text: text,
+                                type: 'written'
+                            });
+                        }
+                    }
+                    
+                    if (questions.length === 0) {
+                        this.showNotification('❌ Добавьте хотя бы один вопрос', true);
+                        return;
+                    }
+                    
+                    // Сохраняем в Firestore
+                    await db.collection('assignments').add({
+                        title: title,
+                        description: description,
+                        type: type,
+                        questions: questions,
+                        teacherId: this.currentUser.uid,
+                        teacherName: `${this.currentUser.firstName} ${this.currentUser.lastName}`,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    this.showNotification('✅ Задание успешно создано!');
+                    this.showSection('assignments');
+                    
+                } catch (error) {
+                    console.error('Ошибка создания задания:', error);
+                    this.showNotification('❌ Ошибка создания задания: ' + error.message, true);
+                }
+            },
+            
+            async loadProgress() {
+                const content = document.getElementById('pageContent');
+                
+                if (this.currentUser.role !== 'teacher') {
+                    content.innerHTML = '<p style="color: #ef4444;">Эта страница доступна только учителям</p>';
+                    return;
+                }
+                
+                try {
+                    // Получаем всех учеников
+                    const studentsSnapshot = await db.collection('users')
+                        .where('role', '==', 'student')
+                        .get();
+                    
+                    // Получаем задания учителя
+                    const assignmentsSnapshot = await db.collection('assignments')
+                        .where('teacherId', '==', this.currentUser.uid)
+                        .get();
+                    
+                    // Получаем все результаты
+                    const resultsSnapshot = await db.collection('results').get();
+                    
+                    let html = `
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #4f46e5; margin-bottom: 15px;">Прогресс учеников</h3>
+                            <p style="color: #64748b;">Всего учеников: ${studentsSnapshot.size}</p>
+                        </div>
+                        
+                        <div class="progress-table-container">
+                            <table class="progress-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ученик</th>
+                                        <th>Email</th>
+                                        <th>Выполнено</th>
+                                        <th>Средний балл</th>
+                                        <th>Последняя активность</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    if (studentsSnapshot.empty) {
+                        html += `
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">
+                                    <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+                                    <p>У вас пока нет учеников</p>
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        for (const studentDoc of studentsSnapshot.docs) {
+                            const student = studentDoc.data();
+                            const studentResults = resultsSnapshot.docs
+                                .filter(doc => doc.data().studentId === studentDoc.id)
+                                .map(doc => doc.data());
+                            
+                            const completedCount = studentResults.length;
+                            const totalScore = studentResults.reduce((sum, result) => sum + (result.score || 0), 0);
+                            const averageScore = completedCount > 0 ? (totalScore / completedCount).toFixed(1) : 0;
+                            
+                            let lastActivity = 'Нет активности';
+                            if (studentResults.length > 0) {
+                                const lastResult = studentResults[studentResults.length - 1];
+                                if (lastResult.completedAt) {
+                                    lastActivity = lastResult.completedAt.toDate().toLocaleDateString('ru-RU');
+                                }
+                            }
+                            
+                            html += `
+                                <tr>
+                                    <td style="font-weight: 600;">${student.firstName} ${student.lastName}</td>
+                                    <td>${student.email}</td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span>${completedCount} из ${assignmentsSnapshot.size}</span>
+                                            ${assignmentsSnapshot.size > 0 ? `
+                                                <div style="flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                                    <div style="height: 100%; width: ${(completedCount / assignmentsSnapshot.size) * 100}%; 
+                                                         background: #10b981; border-radius: 4px;"></div>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span style="font-weight: 600; color: ${averageScore >= 70 ? '#10b981' : averageScore >= 50 ? '#f59e0b' : '#ef4444'}">
+                                            ${averageScore}%
+                                        </span>
+                                    </td>
+                                    <td>${lastActivity}</td>
+                                    <td>
+                                        <button onclick="app.viewStudentProgress('${studentDoc.id}')" class="btn btn-outline" 
+                                                style="padding: 6px 12px; font-size: 0.9rem;">
+                                            Подробнее
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    }
+                    
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div style="margin-top: 30px; display: flex; justify-content: flex-end;">
+                            <button onclick="app.exportProgress()" class="btn btn-secondary">
+                                <i class="fas fa-download"></i> Экспортировать данные
+                            </button>
+                        </div>
+                    `;
+                    
+                    content.innerHTML = html;
+                } catch (error) {
+                    console.error('Ошибка загрузки прогресса:', error);
+                    content.innerHTML = '<p style="color: #ef4444;">Ошибка загрузки данных прогресса</p>';
+                }
+            },
+            
+            async loadProfile() {
+                const content = document.getElementById('pageContent');
+                
+                content.innerHTML = `
+                    <div style="max-width: 600px; margin: 0 auto;">
+                        <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+                            <h3 style="color: #4f46e5; margin-bottom: 30px; text-align: center;">👤 Мой профиль</h3>
+                            
+                            <div class="form-group">
+                                <label style="color: #64748b; font-weight: 600; margin-bottom: 8px;">Имя и фамилия</label>
+                                <div style="padding: 15px; background: #f8fafc; border-radius: 10px; font-size: 1.1rem; color: #1e293b;">
+                                    ${this.currentUser.firstName} ${this.currentUser.lastName}
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="color: #64748b; font-weight: 600; margin-bottom: 8px;">Email адрес</label>
+                                <div style="padding: 15px; background: #f8fafc; border-radius: 10px; color: #475569;">
+                                    ${this.currentUser.email}
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label style="color: #64748b; font-weight: 600; margin-bottom: 8px;">Роль</label>
+                                <div style="padding: 15px; background: #f8fafc; border-radius: 10px;">
+                                    <span style="display: inline-block; background: ${this.currentUser.role === 'teacher' ? '#f59e0b' : '#10b981'}; 
+                                          color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600;">
+                                        ${this.currentUser.role === 'teacher' ? '👨‍🏫 Учитель' : '👨‍🎓 Ученик'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #f1f5f9;">
+                                <button onclick="app.logout()" class="btn btn-danger" style="width: 100%; padding: 15px;">
+                                    <i class="fas fa-sign-out-alt"></i> Выйти из системы
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            async startAssignment(assignmentId) {
+                try {
+                    const doc = await db.collection('assignments').doc(assignmentId).get();
+                    if (!doc.exists) {
+                        this.showNotification('Задание не найдено', true);
+                        return;
+                    }
+                    
+                    this.currentAssignment = {
+                        id: assignmentId,
+                        ...doc.data(),
+                        userAnswers: []
+                    };
+                    
+                    this.showAssignmentTest();
+                } catch (error) {
+                    console.error('Ошибка загрузки задания:', error);
+                    this.showNotification('Ошибка загрузки задания', true);
+                }
+            },
+            
+            showAssignmentTest() {
+                const assignment = this.currentAssignment;
+                const content = document.getElementById('pageContent');
+                
+                document.getElementById('pageTitle').textContent = assignment.title;
+                
+                if (assignment.type === 'test') {
+                    this.renderTestQuestions();
+                } else {
+                    this.renderWrittenAssignment();
+                }
+            },
+            
+            renderTestQuestions() {
+                const assignment = this.currentAssignment;
+                const content = document.getElementById('pageContent');
+                const questions = assignment.questions || [];
+                
+                let html = `<div class="test-container">`;
+                
+                html += `
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #4f46e5; margin-bottom: 10px;">${assignment.title}</h3>
+                        ${assignment.description ? `<p style="color: #64748b;">${assignment.description}</p>` : ''}
+                        <p style="color: #94a3b8; margin-top: 10px;">Количество вопросов: ${questions.length}</p>
+                    </div>
+                `;
+                
+                questions.forEach((question, index) => {
+                    html += `
+                        <div class="test-question" data-question-index="${index}">
+                            <h4 style="color: #475569; margin-bottom: 15px;">Вопрос ${index + 1}: ${question.text}</h4>
+                            <div class="test-options">
+                    `;
+                    
+                    if (question.type === 'test' && question.options) {
+                        question.options.forEach((option, optIndex) => {
+                            html += `
+                                <div class="test-option" onclick="app.selectAnswer(${index}, ${optIndex})" 
+                                     id="option-${index}-${optIndex}">
+                                    <input type="radio" name="question-${index}" id="radio-${index}-${optIndex}">
+                                    <label for="radio-${index}-${optIndex}" style="cursor: pointer; flex: 1;">${option.text}</label>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += `
+                            <div class="form-group">
+                                <textarea class="form-control" rows="4" placeholder="Введите ваш ответ..." 
+                                          oninput="app.saveWrittenAnswer(${index}, this.value)"></textarea>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 2px solid #f1f5f9;">
+                            <button onclick="app.showSection('assignments')" class="btn btn-outline">
+                                <i class="fas fa-arrow-left"></i> Назад к заданиям
+                            </button>
+                            <button onclick="app.submitAssignment()" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить ответы
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            },
+            
+            renderWrittenAssignment() {
+                const assignment = this.currentAssignment;
+                const content = document.getElementById('pageContent');
+                const questions = assignment.questions || [];
+                
+                let html = `<div class="test-container">`;
+                
+                html += `
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #4f46e5; margin-bottom: 10px;">${assignment.title}</h3>
+                        ${assignment.description ? `<p style="color: #64748b;">${assignment.description}</p>` : ''}
+                        <p style="color: #94a3b8; margin-top: 10px;">Письменное задание</p>
+                    </div>
+                `;
+                
+                questions.forEach((question, index) => {
+                    html += `
+                        <div class="test-question">
+                            <h4 style="color: #475569; margin-bottom: 15px;">${question.text}</h4>
+                            <div class="form-group">
+                                <textarea class="form-control" rows="6" placeholder="Введите ваш ответ..." 
+                                          id="written-answer-${index}" 
+                                          oninput="app.saveWrittenAnswer(${index}, this.value)"></textarea>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                        <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 2px solid #f1f5f9;">
+                            <button onclick="app.showSection('assignments')" class="btn btn-outline">
+                                <i class="fas fa-arrow-left"></i> Назад к заданиям
+                            </button>
+                            <button onclick="app.submitAssignment()" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Отправить ответ
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+            },
+            
+            selectAnswer(questionIndex, optionIndex) {
+                // Снимаем выделение со всех вариантов этого вопроса
+                document.querySelectorAll(`.test-option[id^="option-${questionIndex}-"]`).forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Выделяем выбранный вариант
+                const selectedOption = document.getElementById(`option-${questionIndex}-${optionIndex}`);
+                if (selectedOption) {
+                    selectedOption.classList.add('selected');
+                    const radio = selectedOption.querySelector('input[type="radio"]');
+                    if (radio) radio.checked = true;
+                    
+                    // Сохраняем ответ
+                    this.currentAssignment.userAnswers[questionIndex] = optionIndex;
+                }
+            },
+            
+            saveWrittenAnswer(questionIndex, answer) {
+                this.currentAssignment.userAnswers[questionIndex] = answer;
+            },
+            
+            async submitAssignment() {
+                try {
+                    const assignment = this.currentAssignment;
+                    const questions = assignment.questions || [];
+                    const userAnswers = assignment.userAnswers || [];
+                    
+                    // Проверяем, что на все вопросы есть ответы (для тестов)
+                    if (assignment.type === 'test') {
+                        const unanswered = questions.filter((q, index) => 
+                            userAnswers[index] === undefined || userAnswers[index] === null
+                        ).length;
+                        
+                        if (unanswered > 0) {
+                            this.showNotification(`❌ Ответьте на все вопросы (осталось: ${unanswered})`, true);
+                            return;
+                        }
+                    }
+                    
+                    // Вычисляем результат для тестов
+                    let score = 0;
+                    if (assignment.type === 'test') {
+                        questions.forEach((question, index) => {
+                            if (question.type === 'test' && question.options) {
+                                const correctIndex = question.options.findIndex(opt => opt.isCorrect);
+                                if (userAnswers[index] === correctIndex) {
+                                    score++;
+                                }
+                            }
+                        });
+                    }
+                    
+                    const percentage = assignment.type === 'test' && questions.length > 0 ? 
+                        Math.round((score / questions.length) * 100) : 0;
+                    
+                    // Сохраняем результат
+                    await db.collection('results').add({
+                        assignmentId: assignment.id,
+                        assignmentTitle: assignment.title,
+                        studentId: this.currentUser.uid,
+                        studentName: `${this.currentUser.firstName} ${this.currentUser.lastName}`,
+                        answers: userAnswers,
+                        score: percentage,
+                        type: assignment.type,
+                        completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        teacherId: assignment.teacherId
+                    });
+                    
+                    if (assignment.type === 'test') {
+                        this.showNotification(`✅ Тест завершен! Ваш результат: ${percentage}%`);
+                    } else {
+                        this.showNotification('✅ Задание отправлено на проверку учителю!');
+                    }
+                    
+                    this.showSection('assignments');
+                    
+                } catch (error) {
+                    console.error('Ошибка отправки задания:', error);
+                    this.showNotification('❌ Ошибка отправки задания', true);
+                }
+            },
+            
+            async previewAssignment(assignmentId) {
+                try {
+                    const doc = await db.collection('assignments').doc(assignmentId).get();
+                    if (!doc.exists) {
+                        this.showNotification('Задание не найдено', true);
+                        return;
+                    }
+                    
+                    const assignment = doc.data();
+                    const content = document.getElementById('pageContent');
+                    
+                    document.getElementById('pageTitle').textContent = `Просмотр: ${assignment.title}`;
+                    
+                    let html = `
+                        <div style="max-width: 800px; margin: 0 auto;">
+                            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+                                <h3 style="color: #4f46e5; margin-bottom: 20px;">${assignment.title}</h3>
+                                
+                                ${assignment.description ? `
+                                    <div style="margin-bottom: 25px; padding: 20px; background: #f8fafc; border-radius: 10px;">
+                                        <h4 style="color: #475569; margin-bottom: 10px;">Описание</h4>
+                                        <p style="color: #64748b;">${assignment.description}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                <div style="margin-bottom: 25px;">
+                                    <h4 style="color: #475569; margin-bottom: 15px;">Информация</h4>
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                        <div style="padding: 15px; background: #f8fafc; border-radius: 10px;">
+                                            <div style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">Тип</div>
+                                            <div style="font-weight: 600; color: #4f46e5;">${assignment.type === 'test' ? 'Тест' : 'Письменное'}</div>
+                                        </div>
+                                        <div style="padding: 15px; background: #f8fafc; border-radius: 10px;">
+                                            <div style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">Вопросов</div>
+                                            <div style="font-weight: 600; color: #4f46e5;">${assignment.questions ? assignment.questions.length : 0}</div>
+                                        </div>
+                                        <div style="padding: 15px; background: #f8fafc; border-radius: 10px;">
+                                            <div style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 5px;">Дата создания</div>
+                                            <div style="font-weight: 600; color: #4f46e5;">
+                                                ${assignment.createdAt ? assignment.createdAt.toDate().toLocaleDateString('ru-RU') : 'Неизвестно'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-top: 30px;">
+                                    <h4 style="color: #475569; margin-bottom: 20px;">Вопросы (${assignment.questions ? assignment.questions.length : 0})</h4>
+                    `;
+                    
+                    if (assignment.questions && assignment.questions.length > 0) {
+                        assignment.questions.forEach((question, index) => {
+                            html += `
+                                <div class="question-item" style="margin-bottom: 20px;">
+                                    <h5 style="color: #4f46e5; margin-bottom: 10px;">${index + 1}. ${question.text}</h5>
+                            `;
+                            
+                            if (question.type === 'test' && question.options) {
+                                html += `<div style="margin-left: 20px;">`;
+                                question.options.forEach((option, optIndex) => {
+                                    html += `
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; 
+                                              padding: 10px; background: ${option.isCorrect ? '#d1fae5' : '#f8fafc'}; 
+                                              border-radius: 8px; border-left: 4px solid ${option.isCorrect ? '#10b981' : '#e2e8f0'};">
+                                            <div style="width: 24px; height: 24px; border-radius: 50%; background: ${option.isCorrect ? '#10b981' : '#94a3b8'}; 
+                                                  color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                                                ${String.fromCharCode(65 + optIndex)}
+                                            </div>
+                                            <span style="color: #475569;">${option.text}</span>
+                                            ${option.isCorrect ? '<span style="color: #10b981; margin-left: auto;">✓ Правильный</span>' : ''}
+                                        </div>
+                                    `;
+                                });
+                                html += `</div>`;
+                            } else {
+                                html += `
+                                    <div style="margin-left: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; color: #64748b;">
+                                        <i class="fas fa-pen" style="margin-right: 10px;"></i>
+                                        Письменный ответ
+                                    </div>
+                                `;
+                            }
+                            
+                            html += `</div>`;
+                        });
+                    } else {
+                        html += `
+                            <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                                <i class="fas fa-question-circle" style="font-size: 3rem; margin-bottom: 15px;"></i>
+                                <p>Вопросы не добавлены</p>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                                </div>
+                                
+                                <div style="display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 2px solid #f1f5f9;">
+                                    <button onclick="app.showSection('assignments')" class="btn btn-outline">
+                                        <i class="fas fa-arrow-left"></i> Назад
+                                    </button>
+                                    <button onclick="app.viewAssignmentResults('${assignmentId}')" class="btn btn-primary">
+                                        <i class="fas fa-chart-bar"></i> Посмотреть результаты
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    content.innerHTML = html;
+                    
+                } catch (error) {
+                    console.error('Ошибка просмотра задания:', error);
+                    this.showNotification('Ошибка загрузки задания', true);
+                }
+            },
+            
+            async viewAssignmentResults(assignmentId) {
+                try {
+                    const resultsSnapshot = await db.collection('results')
+                        .where('assignmentId', '==', assignmentId)
+                        .get();
+                    
+                    const assignmentDoc = await db.collection('assignments').doc(assignmentId).get();
+                    const assignment = assignmentDoc.data();
+                    
+                    const content = document.getElementById('pageContent');
+                    
+                    document.getElementById('pageTitle').textContent = `Результаты: ${assignment.title}`;
+                    
+                    let html = `
+                        <div style="max-width: 1000px; margin: 0 auto;">
+                            <div style="background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 30px;">
+                                    <div>
+                                        <h3 style="color: #4f46e5; margin-bottom: 10px;">${assignment.title}</h3>
+                                        <p style="color: #64748b;">Всего выполнено: ${resultsSnapshot.size}</p>
+                                    </div>
+                                    <button onclick="app.showSection('assignments')" class="btn btn-outline">
+                                        <i class="fas fa-arrow-left"></i> Назад
+                                    </button>
+                                </div>
+                    `;
+                    
+                    if (resultsSnapshot.empty) {
+                        html += `
+                            <div style="text-align: center; padding: 60px; color: #94a3b8;">
+                                <i class="fas fa-chart-line" style="font-size: 4rem; margin-bottom: 20px;"></i>
+                                <h4 style="margin-bottom: 10px;">Результатов пока нет</h4>
+                                <p>Ученики еще не выполнили это задание</p>
+                            </div>
+                        `;
+                    } else {
+                        // Статистика
+                        const scores = resultsSnapshot.docs.map(doc => doc.data().score || 0);
+                        const averageScore = scores.length > 0 ? 
+                            (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 0;
+                        const maxScore = Math.max(...scores);
+                        const minScore = Math.min(...scores);
+                        
+                        html += `
+                            <div style="margin-bottom: 30px;">
+                                <h4 style="color: #475569; margin-bottom: 20px;">Статистика</h4>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                                    <div style="padding: 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 10px;">
+                                        <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px;">Средний балл</div>
+                                        <div style="font-size: 2rem; font-weight: 800;">${averageScore}%</div>
+                                    </div>
+                                    <div style="padding: 20px; background: #f8fafc; border-radius: 10px;">
+                                        <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">Максимальный</div>
+                                        <div style="font-size: 1.5rem; font-weight: 800; color: #10b981;">${maxScore}%</div>
+                                    </div>
+                                    <div style="padding: 20px; background: #f8fafc; border-radius: 10px;">
+                                        <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">Минимальный</div>
+                                        <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b;">${minScore}%</div>
+                                    </div>
+                                    <div style="padding: 20px; background: #f8fafc; border-radius: 10px;">
+                                        <div style="color: #64748b; font-size: 0.9rem; margin-bottom: 5px;">Выполнили</div>
+                                        <div style="font-size: 1.5rem; font-weight: 800; color: #4f46e5;">${resultsSnapshot.size}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 style="color: #475569; margin-bottom: 20px;">Результаты учеников</h4>
+                                <div class="progress-table-container">
+                                    <table class="progress-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Ученик</th>
+                                                <th>Результат</th>
+                                                <th>Дата выполнения</th>
+                                                <th>Статус</th>
+                                                <th>Действия</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                        `;
+                        
+                        resultsSnapshot.forEach(doc => {
+                            const result = doc.data();
+                            const score = result.score || 0;
+                            const completedAt = result.completedAt ? 
+                                result.completedAt.toDate().toLocaleDateString('ru-RU') : 'Неизвестно';
+                            
+                            html += `
+                                <tr>
+                                    <td style="font-weight: 600;">${result.studentName}</td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 10px;">
+                                            <span style="font-weight: 600; color: ${score >= 70 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444'}">
+                                                ${score}%
+                                            </span>
+                                            <div style="flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                                <div style="height: 100%; width: ${score}%; 
+                                                     background: ${score >= 70 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444'}; 
+                                                     border-radius: 4px;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${completedAt}</td>
+                                    <td>
+                                        <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; 
+                                              background: ${assignment.type === 'written' && score === 0 ? '#fef3c7' : '#d1fae5'}; 
+                                              color: ${assignment.type === 'written' && score === 0 ? '#92400e' : '#065f46'}; 
+                                              font-size: 0.85rem; font-weight: 600;">
+                                            ${assignment.type === 'written' && score === 0 ? 'На проверке' : 'Завершено'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="app.viewStudentResult('${doc.id}')" class="btn btn-outline" 
+                                                style="padding: 6px 12px; font-size: 0.9rem;">
+                                            Подробнее
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    html += `
+                                <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+                                    <button onclick="app.exportResults('${assignmentId}')" class="btn btn-secondary">
+                                        <i class="fas fa-download"></i> Экспортировать результаты
+                                    </button>
+                                    <button onclick="app.showSection('assignments')" class="btn btn-primary">
+                                        <i class="fas fa-tasks"></i> К списку заданий
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    content.innerHTML = html;
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки результатов:', error);
+                    this.showNotification('Ошибка загрузки результатов', true);
+                }
+            },
+            
+            async viewMyResult(assignmentId) {
+                try {
+                    const resultsSnapshot = await db.collection('results')
+                        .where('assignmentId', '==', assignmentId)
+                        .where('studentId', '==', this.currentUser.uid)
+                        .get();
+                    
+                    if (resultsSnapshot.empty) {
+                        this.showNotification('Результат не найден', true);
+                        return;
+                    }
+                    
+                    const resultDoc = resultsSnapshot.docs[0];
+                    const result = resultDoc.data();
+                    
+                    const assignmentDoc = await db.collection('assignments').doc(assignmentId).get();
+                    const assignment = assignmentDoc.data();
+                    
+                    const content = document.getElementById('pageContent');
+                    
+                    document.getElementById('pageTitle').textContent = `Мой результат: ${assignment.title}`;
+                    
+                    let html = `
+                        <div style="max-width: 800px; margin: 0 auto;">
+                            <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1);">
+                                <div style="text-align: center; margin-bottom: 40px;">
+                                    <h3 style="color: #4f46e5; margin-bottom: 15px;">${assignment.title}</h3>
+                                    <p style="color: #64748b;">Ваш результат</p>
+                                </div>
+                                
+                                <div style="text-align: center; margin-bottom: 40px;">
+                                    <div style="display: inline-block; padding: 30px; background: linear-gradient(135deg, #667eea, #764ba2); 
+                                          color: white; border-radius: 50%; width: 150px; height: 150px; display: flex; align-items: center; 
+                                          justify-content: center; margin: 0 auto 20px;">
+                                        <div>
+                                            <div style="font-size: 2.5rem; font-weight: 800;">${result.score || 0}%</div>
+                                            <div style="font-size: 0.9rem; opacity: 0.9;">результат</div>
+                                        </div>
+                                    </div>
+                                    <div style="color: #64748b; margin-top: 15px;">
+                                        Дата выполнения: ${result.completedAt ? result.completedAt.toDate().toLocaleDateString('ru-RU') : 'Неизвестно'}
+                                    </div>
+                                </div>
+                    `;
+                    
+                    if (assignment.type === 'test' && assignment.questions) {
+                        html += `
+                            <div style="margin-top: 30px;">
+                                <h4 style="color: #475569; margin-bottom: 20px; text-align: center;">Детализация ответов</h4>
+                        `;
+                        
+                        assignment.questions.forEach((question, index) => {
+                            const userAnswer = result.answers ? result.answers[index] : null;
+                            const isCorrect = question.type === 'test' && question.options ? 
+                                question.options[userAnswer]?.isCorrect : false;
+                            
+                            html += `
+                                <div class="question-item" style="margin-bottom: 20px;">
+                                    <h5 style="color: #4f46e5; margin-bottom: 10px;">${index + 1}. ${question.text}</h5>
+                            `;
+                            
+                            if (question.type === 'test' && question.options) {
+                                question.options.forEach((option, optIndex) => {
+                                    const isUserChoice = userAnswer === optIndex;
+                                    const isRightAnswer = option.isCorrect;
+                                    
+                                    html += `
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 10px; 
+                                              background: ${isRightAnswer ? '#d1fae5' : isUserChoice && !isRightAnswer ? '#fee2e2' : '#f8fafc'}; 
+                                              border-radius: 8px; border-left: 4px solid ${isRightAnswer ? '#10b981' : isUserChoice && !isRightAnswer ? '#ef4444' : '#e2e8f0'};">
+                                            <div style="width: 24px; height: 24px; border-radius: 50%; 
+                                                  background: ${isRightAnswer ? '#10b981' : isUserChoice && !isRightAnswer ? '#ef4444' : '#94a3b8'}; 
+                                                  color: white; display: flex; align-items: center; justify-content: center; font-weight: 600;">
+                                                ${String.fromCharCode(65 + optIndex)}
+                                            </div>
+                                            <span style="color: #475569; flex: 1;">${option.text}</span>
+                                            ${isRightAnswer ? '<span style="color: #10b981; font-weight: 600;">✓ Правильный</span>' : ''}
+                                            ${isUserChoice && !isRightAnswer ? '<span style="color: #ef4444; font-weight: 600;">✗ Ваш выбор</span>' : ''}
+                                            ${isUserChoice && isRightAnswer ? '<span style="color: #10b981; font-weight: 600;">✓ Ваш выбор</span>' : ''}
+                                        </div>
+                                    `;
+                                });
+                            } else {
+                                html += `
+                                    <div style="padding: 15px; background: #f8fafc; border-radius: 8px;">
+                                        <div style="color: #64748b; margin-bottom: 10px;">Ваш ответ:</div>
+                                        <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; color: #475569;">
+                                            ${userAnswer || 'Ответ не предоставлен'}
+                                        </div>
+                                        ${result.score === 0 ? `
+                                            <div style="color: #f59e0b; margin-top: 10px; padding: 10px; background: #fef3c7; border-radius: 8px;">
+                                                <i class="fas fa-clock"></i> Ожидает проверки учителем
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            }
+                            
+                            html += `</div>`;
+                        });
+                        
+                        html += `</div>`;
+                    }
+                    
+                    html += `
+                                <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #f1f5f9; text-align: center;">
+                                    <button onclick="app.showSection('assignments')" class="btn btn-primary">
+                                        <i class="fas fa-arrow-left"></i> Вернуться к заданиям
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    content.innerHTML = html;
+                    
+                } catch (error) {
+                    console.error('Ошибка загрузки результата:', error);
+                    this.showNotification('Ошибка загрузки результата', true);
+                }
+            },
+            
+            viewStudentProgress(studentId) {
+                this.showNotification('Функция в разработке', true);
+            },
+            
+            viewStudentResult(resultId) {
+                this.showNotification('Функция в разработке', true);
+            },
+            
+            exportProgress() {
+                this.showNotification('Экспорт данных будет доступен в следующей версии', true);
+            },
+            
+            exportResults(assignmentId) {
+                this.showNotification('Экспорт результатов будет доступен в следующей версии', true);
+            }
+        };
+
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+            window.app = app; // Делаем доступным глобально
+        });
+    </script>
+</body>
+</html>
